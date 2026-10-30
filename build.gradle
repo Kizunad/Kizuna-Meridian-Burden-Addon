@@ -1,0 +1,62 @@
+plugins {
+    id 'base'
+    id 'fabric-loom' version '1.6-SNAPSHOT' apply false
+}
+
+allprojects {
+    group = 'dev.kizuna.meridian.burden'
+    version = '0.1.0-SNAPSHOT'
+}
+
+// 相邻仓库的安装产物，fabric 子工程按需声明为编译或运行依赖。
+ext.siblingArtifacts = [
+        frameworkServer: '../Kizuna-Meridian-Mod-Framework/server/build/libs/kizuna-meridian-mod-framework-server-0.1.0-SNAPSHOT.jar',
+        humanFabric: '../Kizuna-Meridian-Human-Addon/fabric/build/libs/kizuna-meridian-human-addon-fabric-0.1.0-SNAPSHOT.jar',
+        humanClient: '../Kizuna-Meridian-Human-Addon/client/build/libs/kizuna-meridian-human-addon-client-0.1.0-SNAPSHOT.jar',
+        weightsServer: '../bs3d-Weights-Addon/server/build/libs/bs3d-weights-addon-server-0.1.0-SNAPSHOT.jar'
+]
+
+subprojects {
+    apply plugin: 'java-library'
+
+    repositories {
+        mavenCentral()
+    }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+        withSourcesJar()
+    }
+    base.archivesName = "${rootProject.name}-${project.name}"
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 17
+        options.encoding = 'UTF-8'
+    }
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher = javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+    tasks.withType(Jar).configureEach {
+        from(rootProject.files('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'))
+    }
+}
+
+tasks.named('assemble') {
+    dependsOn ':fabric:assemble'
+}
+tasks.named('check') {
+    dependsOn ':fabric:check', 'checkDocs'
+}
+tasks.named('clean') {
+    dependsOn ':fabric:clean'
+}
+tasks.register('test') {
+    group = 'verification'
+    dependsOn ':fabric:test'
+}
+tasks.register('checkDocs', Exec) {
+    group = 'verification'
+    commandLine 'python3', 'scripts/check_docs.py'
+}

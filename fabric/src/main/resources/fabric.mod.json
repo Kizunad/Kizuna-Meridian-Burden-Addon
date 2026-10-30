@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "meridian_burden",
+  "version": "${version}",
+  "name": "Kizuna's Meridian Burden",
+  "description": "按 BS3D Weights 有效负重放大 Human 行走与疾跑做功",
+  "authors": ["Kizunad"],
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.kizuna.meridian.burden.fabric.BurdenFabric"]
+  },
+  "depends": {
+    "java": ">=17",
+    "minecraft": "1.20.1",
+    "fabricloader": ">=0.16.10",
+    "fabric-api": "*",
+    "bs3d_weights_addon": "*",
+    "meridian_human_host": "*"
+  }
+}

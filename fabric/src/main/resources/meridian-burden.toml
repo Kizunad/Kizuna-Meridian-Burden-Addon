@@ -1,0 +1,5 @@
+# Kizuna Meridian Burden：把有效负重换算为 Human 行走与疾跑的负荷倍率（逻辑服务器读取）。
+# 倍率 = 1 + 有效负重 kg / reference_kg；有效负重由 BS3D Weights 的 config/bs3d_weights/burden.toml 按来源系数算出。
+# 默认 70 kg 有效负重走路正好耗双倍体力。必须是正的有限数，可写整数或小数。
+# 只允许这一个键，拼错或多出的键会让服务器拒绝启动。修改后重启服务器或重新进入单机世界生效。
+reference_kg = 70

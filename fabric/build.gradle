@@ -1,0 +1,93 @@
+plugins { id 'fabric-loom' }
+
+description = '按 BS3D Weights 的有效负重放大 Human 行走与疾跑做功。'
+
+repositories {
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+def sibling = { String key -> rootProject.file(rootProject.siblingArtifacts[key]) }
+
+dependencies {
+    minecraft 'com.mojang:minecraft:1.20.1'
+    mappings 'net.fabricmc:yarn:1.20.1+build.10:v2'
+    modImplementation 'net.fabricmc:fabric-loader:0.16.10'
+    modImplementation 'net.fabricmc.fabric-api:fabric-api:0.92.3+1.20.1'
+
+    // 行走负荷接入点来自必装 Human；开发运行由完整装配提供同一 JAR。
+    modCompileOnly files(sibling('humanFabric'))
+    // 有效负重 API 来自必装 Weights；完整装配不含它，GameTest 直接装入专用服务端产物。
+    modImplementation files(sibling('weightsServer'))
+    // 参考负重写在 TOML，安装 JAR 自带解析库。
+    include implementation('org.tomlj:tomlj:1.1.1')
+    include implementation('org.antlr:antlr4-runtime:4.11.1')
+    testImplementation 'junit:junit:4.13.2'
+}
+
+test { useJUnit() }
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand version: project.version }
+}
+
+// 开发运行沿用 Meridian 统一完整装配；Human 的嵌套 Framework、协议库与客户端产物在开发时显式补齐。
+apply from: '../../Kizuna-Meridian-Mod-Framework/scripts/full-assembly.gradle'
+dependencies {
+    localRuntime files(sibling('frameworkServer'), sibling('humanClient'))
+    localRuntime 'com.google.protobuf:protobuf-java:4.36.2'
+}
+
+loom {
+    mods {
+        meridian_burden { sourceSet sourceSets.main }
+    }
+}
+
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+    }
+}
+
+dependencies {
+    // GameTest 经 Human 公开健康宿主读取 Framework 身体快照。
+    gametestCompileOnly files(sibling('frameworkServer'))
+    gametestCompileOnly 'com.google.protobuf:protobuf-java:4.36.2'
+}
+
+loom {
+    mods {
+        meridian_burden_test { sourceSet sourceSets.gametest }
+    }
+    runs {
+        gametest {
+            server()
+            name '负重 GameTest'
+            source sourceSets.gametest
+            runDir 'build/gametest'
+            vmArg '-Dfabric-api.gametest'
+            vmArg '-Dfabric-api.gametest.report-file=build/gametest-results.xml'
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.named('runGametest') {
+        doFirst {
+            // 平坦世界、固定本机地址与最小视距，避免占用用户环境。
+            def runDirectory = file('build/gametest')
+            runDirectory.mkdirs()
+            new File(runDirectory, 'eula.txt').text = 'eula=true\n'
+            new File(runDirectory, 'server.properties').text = '''online-mode=false
+server-ip=127.0.0.1
+server-port=0
+level-type=flat
+generate-structures=false
+view-distance=2
+simulation-distance=2
+'''
+        }
+    }
+}
