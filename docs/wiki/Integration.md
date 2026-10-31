@@ -25,7 +25,7 @@ Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来
 
 ## 对其他附属的读数
 
-`BurdenLoad.read(ServerPlayerEntity)` 返回 `Optional<BurdenReading>`：
+`BurdenLoad.read(ServerPlayer)` 返回 `Optional<BurdenReading>`：
 
 | 字段 | 含义 |
 |---|---|

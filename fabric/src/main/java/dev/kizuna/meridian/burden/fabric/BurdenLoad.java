@@ -3,10 +3,10 @@ package dev.kizuna.meridian.burden.fabric;
 import dev.kizuna.bs3d.weights.server.Burden;
 import dev.kizuna.meridian.human.fabric.HumanMovementLoad;
 import dev.kizuna.meridian.human.fabric.HumanMovementLoads;
-import net.minecraft.server.network.ServerPlayerEntity;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalLong;
+import net.minecraft.server.level.ServerPlayer;
 
 /** 把 Weights 的有效负重换算为 Human 行走负荷；库存暂不可算时按无负荷结算。 */
 public final class BurdenLoad implements HumanMovementLoad {
@@ -27,7 +27,7 @@ public final class BurdenLoad implements HumanMovementLoad {
     }
 
     /** 当前读数；Weights 判定库存不可用时为空。只能在逻辑服务器主线程调用。 */
-    public static Optional<BurdenReading> read(ServerPlayerEntity player) {
+    public static Optional<BurdenReading> read(ServerPlayer player) {
         BurdenLoad load = installed;
         if (load == null) {
             throw new IllegalStateException("负重附属尚未初始化");
@@ -36,19 +36,19 @@ public final class BurdenLoad implements HumanMovementLoad {
     }
 
     @Override
-    public double multiplier(ServerPlayerEntity player) {
+    public double multiplier(ServerPlayer player) {
         // 损坏库存由 Weights 记录告警；这里按无负荷结算，不因读数缺失让 Human 暂停身体。
         return reading(player).map(BurdenReading::multiplier).orElse(BurdenReading.UNLOADED);
     }
 
     @Override
-    public Optional<String> status(ServerPlayerEntity player) {
+    public Optional<String> status(ServerPlayer player) {
         // 库存暂不可算时说明按无负荷结算，不显示成 0 kg。
         String line = reading(player).map(BurdenLoad::describe).orElse(UNAVAILABLE_STATUS);
         return Optional.of(line);
     }
 
-    private Optional<BurdenReading> reading(ServerPlayerEntity player) {
+    private Optional<BurdenReading> reading(ServerPlayer player) {
         // Weights 每 5 个服务端 tick 最多重算一次，同一 tick 内的实重与有效负重读自同一份结果。
         OptionalLong effective = Burden.effectiveGrams(player);
         OptionalLong total = Burden.totalGrams(player);

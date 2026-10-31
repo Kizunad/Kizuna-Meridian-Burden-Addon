@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+
 /** 倍率 = 1 + 有效负重 kg / 参考负重 kg，实重只随读数原样带出。 */
 public final class BurdenReadingTest {
     private static final BurdenSettings SEVENTY_KG = new BurdenSettings(70);
