@@ -45,3 +45,13 @@ JUnit 6/6 通过（`BurdenSettingsTest` 3、`BurdenReadingTest` 3）。
   查看他人所需的权限与目标补全归 Human 的注册节点，不在本仓断言。
 
 结果：JUnit 6/6；GameTest 3/3，加载 68 个模组（含 S2 新增的 `meridian_framework`）；文档检查通过（5 个页面）。
+
+## 2026-11-01：S3 迁到 Minecraft 26.2
+
+Minecraft 26.2、Java 25、Gradle 9.8.0 wrapper、Loom 1.19.3（26.x 不混淆，不重映射），依赖改为普通 `implementation`/`compileOnly`；正式代码不变。
+测试玩家改用功法库 testFixtures 的登录夹具（`RecordingConnection` + `TestPlayers.logIn`），客户端频道名单不变。
+GameTest 改用 Fabric `@GameTest`：行走用例沿用 300 tick，其余两例显式写 1.20.1 默认的 100 tick（26.2 默认只有 20 tick）。
+
+命令：`./gradlew test build :fabric:compileGametestJava`；`python3 scripts/check_docs.py`；`git diff --check`。
+
+结果：JUnit 6/6；文档检查通过（5 个页面）。GameTest 尚未运行：完整装配里还有附属没迁完，迁完后用正式完整装配统一跑。

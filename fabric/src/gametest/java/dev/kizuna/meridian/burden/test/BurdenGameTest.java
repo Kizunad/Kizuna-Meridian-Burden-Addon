@@ -5,10 +5,11 @@ import dev.kizuna.meridian.burden.fabric.BurdenReading;
 import dev.kizuna.meridian.human.fabric.HumanHealthHost;
 import dev.kizuna.meridian.protocol.HealthHostProtobuf;
 import dev.kizuna.meridian.protocol.pb.HealthHostMessages.HealthHostRequest;
-import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
-import net.minecraft.gametest.framework.GameTest;
+import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.server.permissions.LevelBasedPermissionSet;
+import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -18,8 +19,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.UUID;
 
+import static dev.kizuna.meridian.burden.test.BurdenGameTestTicks.DEFAULT_TIMEOUT;
+
 /** 正式 Human 运动观察、Weights 计重与负重提供者串联：主库存的石头加重行走，快捷栏的不计。 */
-public final class BurdenGameTest implements FabricGameTest {
+public final class BurdenGameTest {
     private static final Logger LOGGER = LoggerFactory.getLogger("meridian_burden_test");
     private static final int HOTBAR_SLOT = 0;
     private static final int FIRST_MAIN_SLOT = 9;
@@ -50,11 +53,11 @@ public final class BurdenGameTest implements FabricGameTest {
     private static final double FATIGUE_RATIO_TOLERANCE = 0.05;
     private static final String SEVENTY_KILOGRAM_STATUS = "负重 70.0 kg，行走负荷 ×2.00";
     // 查看他人身体要求权限 2；倍率按两位小数输出，1 + 128/70 显示为 2.83。
-    private static final int OTHER_BODY_PERMISSION_LEVEL = 2;
+    private static final PermissionSet OTHER_BODY_PERMISSIONS = LevelBasedPermissionSet.GAMEMASTER;
     private static final String FULL_STACK_IN_MAIN_STATUS = "负重 128.0 kg，行走负荷 ×2.83";
     private static final String UNLOADED_STATUS = "负重 0.0 kg，行走负荷 ×1.00";
 
-    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, timeoutTicks = WALK_TEST_TICK_LIMIT)
+    @GameTest(maxTicks = WALK_TEST_TICK_LIMIT)
     public void seventyKilogramsDoubleLegFatigueOfTenSecondsWalking(GameTestHelper context) {
         // 两名玩家并排走同样 10 秒，背 70 kg 的一侧股直肌疲劳约为空身两倍。
         var loaded = new BurdenTestPlayer(context);
@@ -80,7 +83,7 @@ public final class BurdenGameTest implements FabricGameTest {
         });
     }
 
-    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    @GameTest(maxTicks = DEFAULT_TIMEOUT)
     public void hotbarStonesAreFreeAndMainInventoryStonesCountTwice(GameTestHelper context) {
         // 同样一组 64 块石头：放快捷栏实重 64 kg、不计负荷；放主库存按 2 倍计 128 kg。
         var hotbar = new BurdenTestPlayer(context);
@@ -98,7 +101,7 @@ public final class BurdenGameTest implements FabricGameTest {
         });
     }
 
-    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    @GameTest(maxTicks = DEFAULT_TIMEOUT)
     public void bodyStatusOfAnotherPlayerEndsWithTargetBurden(GameTestHelper context) {
         // 负重查询命令已删除：权限 2 经正式命令分发查看另一名玩家的身体，末行是目标而不是执行者的负重。
         var admin = new BurdenTestPlayer(context);
@@ -107,8 +110,8 @@ public final class BurdenGameTest implements FabricGameTest {
         context.runAtTickTime(READING_REFRESH_TICKS, () -> {
             try (admin; target) {
                 String name = target.player.getName().getString();
-                var operator = admin.player.createCommandSourceStack().withPermission(OTHER_BODY_PERMISSION_LEVEL);
-                var commands = admin.player.getServer().getCommands();
+                var operator = admin.player.createCommandSourceStack().withPermission(OTHER_BODY_PERMISSIONS);
+                var commands = admin.player.level().getServer().getCommands();
                 commands.performPrefixedCommand(operator, "meridian body status " + name);
                 List<String> adminLines = messages(admin);
                 context.assertTrue(adminLines.contains(FULL_STACK_IN_MAIN_STATUS), "他人身体总览未附加其负重：" + adminLines);
@@ -150,7 +153,7 @@ public final class BurdenGameTest implements FabricGameTest {
 
     private static void verifyStatus(GameTestHelper context, BurdenTestPlayer fixture) {
         // 经正式命令分发执行 /meridian body status，总览末尾应附加负重说明。
-        var server = fixture.player.getServer();
+        var server = fixture.player.level().getServer();
         server.getCommands().performPrefixedCommand(fixture.player.createCommandSourceStack(), "meridian body status");
         List<String> lines = messages(fixture);
         context.assertTrue(lines.contains(SEVENTY_KILOGRAM_STATUS), "/meridian body status 未附加负重说明：" + lines);
@@ -158,7 +161,7 @@ public final class BurdenGameTest implements FabricGameTest {
 
     private static List<String> messages(BurdenTestPlayer fixture) {
         // 聊天与命令反馈都以系统消息包发给玩家。
-        return fixture.connection.packets.stream()
+        return fixture.connection.packets().stream()
                 .filter(ClientboundSystemChatPacket.class::isInstance)
                 .map(packet -> ((ClientboundSystemChatPacket) packet).content().getString())
                 .toList();

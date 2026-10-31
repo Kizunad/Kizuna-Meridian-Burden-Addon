@@ -1,6 +1,6 @@
 # 仓库协作约定
 
-- 本仓库只收 Minecraft Java 版 1.20.1 的负重附属：把 BS3D Weights 的有效负重换算为 Human 行走与疾跑的负荷倍率。计重规则归 Weights，做功、爆发与耐力截断归 Human，权威身体状态归 Framework。
+- 本仓库只收 Minecraft Java 版 26.2 的负重附属：把 BS3D Weights 的有效负重换算为 Human 行走与疾跑的负荷倍率。计重规则归 Weights，做功、爆发与耐力截断归 Human，权威身体状态归 Framework。
 - Weights 与 Human 都是硬依赖；不得添加缺少依赖时的替代路径、降级或可选依赖判断。
 - 不复制计重或做功代码：有效负重只经 Weights 公开的 `Burden` API 读取，倍率只经 Human 的 `HumanMovementLoads` 注册点提供。
 - `fabric/` 保存配置、提供者与初始化入口（本附属不注册指令，负重行由 Human 的 `/meridian body status` 显示）；`fabric/src/gametest` 只放 GameTest 与测试玩家夹具。

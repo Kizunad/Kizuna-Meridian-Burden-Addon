@@ -1,4 +1,4 @@
-plugins { id 'fabric-loom' }
+plugins { id 'net.fabricmc.fabric-loom' }
 
 description = '按 BS3D Weights 的有效负重放大 Human 行走与疾跑做功。'
 
@@ -7,16 +7,16 @@ repositories {
 }
 
 dependencies {
+    // 26.x 不混淆：直接用官方名编译，没有映射，模组依赖也不经重映射。
     minecraft libs.minecraft
-    mappings loom.officialMojangMappings()
-    modImplementation libs.fabric.loader
-    modImplementation libs.fabric.api
+    implementation libs.fabric.loader
+    implementation libs.fabric.api
 
     // 相邻仓库在 settings 中以源码组合，与原先读单个 JAR 一致只取各模块本身。
     // 行走负荷接入点来自必装 Human；开发运行由完整装配按同一组件装入。
-    modCompileOnly('dev.kizuna.meridian.human:fabric') { transitive = false }
+    compileOnly('dev.kizuna.meridian.human:fabric') { transitive = false }
     // 有效负重 API 来自必装 Weights 的服务端模块。
-    modImplementation('dev.kizuna.bs3d.weights:server') { transitive = false }
+    implementation('dev.kizuna.bs3d.weights:server') { transitive = false }
     // 参考负重写在 TOML，安装 JAR 自带解析库；版本目录条目是 Provider，嵌套声明单独写。
     implementation libs.tomlj
     include libs.tomlj
@@ -58,6 +58,8 @@ dependencies {
     // GameTest 经 Human 公开健康宿主读取 Framework 身体快照。
     gametestCompileOnly('local.meridian:server') { transitive = false }
     gametestCompileOnly libs.protobuf.java
+    // 登录假玩家夹具来自功法库的 testFixtures，与功法 fabric 同经源码组合解析。
+    gametestImplementation testFixtures('dev.kizuna.meridian.technique:fabric')
 }
 
 loom {
