@@ -28,3 +28,20 @@ Framework 统一装配清单以源码组合，编译与开发运行使用其当�
 JUnit 6/6 通过（`BurdenSettingsTest` 3、`BurdenReadingTest` 3）。
 
 未做客户端界面测试：本附属没有客户端代码，状态行只经服务端命令输出。
+
+## 2026-10-31：S2 指令整理
+
+`/meridian burden` 按 Framework 指令对照表删除，负重只经 Human 的 `/meridian body status` 总览末行显示。
+游戏内不再显示随身实重，只有有效负重与倍率；实重仍由 `BurdenLoad.read` 带出，`hotbarStonesAreFreeAndMainInventoryStonesCountTwice` 照旧断言。
+
+命令：删除 `.gradle/loom-cache/remapped_mods` 后 `./gradlew test build :fabric:runGametest`（Gradle 守护进程 Java 21，开发运行 Java 17）；
+`python3 scripts/check_docs.py`；`git diff --check`。
+
+- `seventyKilogramsDoubleLegFatigueOfTenSecondsWalking`：末尾改为执行 `/meridian body status`，末行仍为「负重 70.0 kg，行走负荷 ×2.00」。
+  实测疲劳：负重 6.6333，空身 3.3167，比值 2.0。
+- `bodyStatusOfAnotherPlayerEndsWithTargetBurden`（替换 `burdenCommandNeedsPermissionAndPrintsBothWeightsAndMultiplier`）：
+  以权限 2 执行 `/meridian body status <玩家>`，执行者收到的总览末行是目标的「负重 128.0 kg，行走负荷 ×2.83」，
+  不含执行者自己的「负重 0.0 kg，行走负荷 ×1.00」；`/meridian` 下已没有 `burden` 节点。
+  查看他人所需的权限与目标补全归 Human 的注册节点，不在本仓断言。
+
+结果：JUnit 6/6；GameTest 3/3，加载 68 个模组（含 S2 新增的 `meridian_framework`）；文档检查通过（5 个页面）。

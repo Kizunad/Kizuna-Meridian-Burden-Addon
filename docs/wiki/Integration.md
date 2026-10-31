@@ -6,8 +6,8 @@
 `HumanMovementLoads.register` 注册一次。Human 只允许一个行走负荷提供者，另一附属若也注册会在初始化时抛出
 `IllegalStateException`，提示两个附属争用同一规则。
 
-同一入口经 Fabric 命令注册事件把 `burden` 分支挂到 `/meridian` 根下。Brigadier 按名字合并根节点，
-本附属不给根节点加权限，也不改 Human 或其他附属已有的分支；权限 2 只加在 `burden` 节点上。
+本附属不注册指令。负重说明经 `HumanMovementLoad.status` 交给 Human，由 Human 的 `/meridian body status`
+附加在总览末尾；指令写法见 [Framework 指令页](https://github.com/Kizunad/Kizuna-Meridian-Mod-Framework/wiki/Commands#body)。
 
 ## 读取时机
 
@@ -15,7 +15,7 @@ Human 在逻辑服务器主线程上每个运动结算区间（最多每秒一�
 本附属每次读取都向 Weights 的 `Burden.effectiveGrams` 与 `Burden.totalGrams` 查询；
 Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来自同一份结果。
 
-| 情况 | 倍率 | `/meridian status` |
+| 情况 | 倍率 | `/meridian body status` |
 |---|---|---|
 | Weights 可算 | `1 + 有效 kg / 参考 kg` | `负重 xx.x kg，行走负荷 ×x.xx` |
 | 库存损坏或重量溢出 | 1 | `负重暂不可用，行走负荷 ×1.00` |
@@ -34,4 +34,4 @@ Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来
 | `multiplier` | 当前行走负荷倍率 |
 
 库存不可算时为空。只能在逻辑服务器主线程调用；模组尚未初始化时抛出 `IllegalStateException`。
-本附属的 `/meridian burden` 命令也通过这个入口读取。
+随身实重只经这个入口提供，游戏内不显示。

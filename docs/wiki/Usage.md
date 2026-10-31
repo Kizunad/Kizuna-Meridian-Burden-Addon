@@ -17,24 +17,16 @@ reference_kg = 70
 
 ## 查看负荷
 
-`/meridian status` 的总览末尾多一行：
+`/meridian body status` 的总览末尾多一行：
 
 ```
 负重 70.0 kg，行走负荷 ×2.00
 ```
 
 有效负重按千克保留一位小数，倍率保留两位。Weights 判定库存不可算（损坏或重量溢出）时显示
-「负重暂不可用，行走负荷 ×1.00」，此时运动按无负荷结算。查看单个组织（`/meridian tissue <id>`）不附加这一行。
+「负重暂不可用，行走负荷 ×1.00」，此时运动按无负荷结算。查看单个组织（`/meridian body tissue <id>`）不附加这一行。
 动作栏和 Human-UI 不新增常驻显示。
 
-## 查询命令
-
-`/meridian burden [targets]` 逐个打印目标玩家的实重、有效负重与倍率：
-
-```
-Steve：实重 64.0 kg，有效负重 128.0 kg，行走负荷 ×2.83
-```
-
-- 需要权限 2；普通玩家看不到也执行不了这个分支，自己的负荷用 `/meridian status` 查看。
-- 不写 `targets` 时查看执行者自己；`targets` 只接受玩家，子命令名和在线玩家名都可 Tab 补全。
-- 库存不可算的玩家报告「负重暂不可用」，不显示成 0 kg。
+管理员查看他人身体时，总览末行是目标玩家的负重。本附属不注册指令，指令写法只在
+[Framework 指令页](https://github.com/Kizunad/Kizuna-Meridian-Mod-Framework/wiki/Commands#body)记录。
+游戏内只显示有效负重与倍率，不显示随身实重；需要实重的附属经 `BurdenLoad.read` 读取（见[接入说明](Integration.md)）。

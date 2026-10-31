@@ -1,14 +1,11 @@
 package dev.kizuna.meridian.burden.test;
 
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.suggestion.Suggestion;
 import dev.kizuna.meridian.burden.fabric.BurdenLoad;
 import dev.kizuna.meridian.burden.fabric.BurdenReading;
 import dev.kizuna.meridian.human.fabric.HumanHealthHost;
 import dev.kizuna.meridian.protocol.HealthHostProtobuf;
 import dev.kizuna.meridian.protocol.pb.HealthHostMessages.HealthHostRequest;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
@@ -52,9 +49,10 @@ public final class BurdenGameTest implements FabricGameTest {
     // 两具身体在相同 tick 起步、停步，只有负荷倍率不同；Human 的结算边界还会带来少量浮点误差。
     private static final double FATIGUE_RATIO_TOLERANCE = 0.05;
     private static final String SEVENTY_KILOGRAM_STATUS = "负重 70.0 kg，行走负荷 ×2.00";
-    // 负重命令要求权限 2；倍率按两位小数输出，1 + 128/70 显示为 2.83。
-    private static final int BURDEN_PERMISSION_LEVEL = 2;
-    private static final String FULL_STACK_IN_MAIN_LINE = "：实重 64.0 kg，有效负重 128.0 kg，行走负荷 ×2.83";
+    // 查看他人身体要求权限 2；倍率按两位小数输出，1 + 128/70 显示为 2.83。
+    private static final int OTHER_BODY_PERMISSION_LEVEL = 2;
+    private static final String FULL_STACK_IN_MAIN_STATUS = "负重 128.0 kg，行走负荷 ×2.83";
+    private static final String UNLOADED_STATUS = "负重 0.0 kg，行走负荷 ×1.00";
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, timeoutTicks = WALK_TEST_TICK_LIMIT)
     public void seventyKilogramsDoubleLegFatigueOfTenSecondsWalking(GameTestHelper context) {
@@ -101,24 +99,22 @@ public final class BurdenGameTest implements FabricGameTest {
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
-    public void burdenCommandNeedsPermissionAndPrintsBothWeightsAndMultiplier(GameTestHelper context) {
-        // 经正式命令分发查看另一名玩家：权限 2 的读数与负重提供者一致，普通玩家无权执行。
+    public void bodyStatusOfAnotherPlayerEndsWithTargetBurden(GameTestHelper context) {
+        // 负重查询命令已删除：权限 2 经正式命令分发查看另一名玩家的身体，末行是目标而不是执行者的负重。
         var admin = new BurdenTestPlayer(context);
         var target = new BurdenTestPlayer(context);
         target.player.getInventory().setItem(FIRST_MAIN_SLOT, new ItemStack(Items.STONE, FULL_STACK));
         context.runAtTickTime(READING_REFRESH_TICKS, () -> {
             try (admin; target) {
                 String name = target.player.getName().getString();
-                String expected = name + FULL_STACK_IN_MAIN_LINE;
-                var operator = admin.player.createCommandSourceStack().withPermission(BURDEN_PERMISSION_LEVEL);
+                var operator = admin.player.createCommandSourceStack().withPermission(OTHER_BODY_PERMISSION_LEVEL);
                 var commands = admin.player.getServer().getCommands();
-                commands.performPrefixedCommand(operator, "meridian burden " + name);
+                commands.performPrefixedCommand(operator, "meridian body status " + name);
                 List<String> adminLines = messages(admin);
-                context.assertTrue(adminLines.contains(expected), "负重命令输出错误：" + adminLines);
-                commands.performPrefixedCommand(target.player.createCommandSourceStack(), "meridian burden");
-                List<String> targetLines = messages(target);
-                context.assertTrue(!targetLines.contains(expected), "普通玩家执行了负重命令：" + targetLines);
-                verifyCompletions(context, commands.getDispatcher(), operator, name);
+                context.assertTrue(adminLines.contains(FULL_STACK_IN_MAIN_STATUS), "他人身体总览未附加其负重：" + adminLines);
+                context.assertTrue(!adminLines.contains(UNLOADED_STATUS), "他人身体总览附加了执行者的负重：" + adminLines);
+                var meridian = commands.getDispatcher().getRoot().getChild("meridian");
+                context.assertTrue(meridian.getChild("burden") == null, "/meridian burden 仍然存在");
             }
             context.succeed();
         });
@@ -153,29 +149,11 @@ public final class BurdenGameTest implements FabricGameTest {
     }
 
     private static void verifyStatus(GameTestHelper context, BurdenTestPlayer fixture) {
-        // 经正式命令分发执行 /meridian status，总览末尾应附加负重说明。
+        // 经正式命令分发执行 /meridian body status，总览末尾应附加负重说明。
         var server = fixture.player.getServer();
-        server.getCommands().performPrefixedCommand(fixture.player.createCommandSourceStack(), "meridian status");
+        server.getCommands().performPrefixedCommand(fixture.player.createCommandSourceStack(), "meridian body status");
         List<String> lines = messages(fixture);
-        context.assertTrue(lines.contains(SEVENTY_KILOGRAM_STATUS), "/meridian status 未附加负重说明：" + lines);
-    }
-
-    private static void verifyCompletions(GameTestHelper context, CommandDispatcher<CommandSourceStack> dispatcher,
-            CommandSourceStack operator, String name) {
-        // 子命令名由字面节点补全，目标由原版玩家选择器补全在线玩家名。
-        List<String> subcommands = suggestions(dispatcher, operator, "meridian bur");
-        context.assertTrue(subcommands.contains("burden"), "负重命令名不能补全：" + subcommands);
-        List<String> players = suggestions(dispatcher, operator, "meridian burden ");
-        context.assertTrue(players.contains(name), "负重命令目标不能补全：" + players);
-    }
-
-    private static List<String> suggestions(CommandDispatcher<CommandSourceStack> dispatcher,
-            CommandSourceStack source, String input) {
-        // 与客户端 Tab 请求相同，先按执行者解析输入，再取光标处的补全。
-        var parsed = dispatcher.parse(input, source);
-        return dispatcher.getCompletionSuggestions(parsed).join().getList().stream()
-                .map(Suggestion::getText)
-                .toList();
+        context.assertTrue(lines.contains(SEVENTY_KILOGRAM_STATUS), "/meridian body status 未附加负重说明：" + lines);
     }
 
     private static List<String> messages(BurdenTestPlayer fixture) {

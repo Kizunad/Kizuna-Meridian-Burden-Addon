@@ -12,7 +12,7 @@
 有效负重的来源系数（快捷栏 0、主库存 2、盔甲/副手/光标 1、穿戴容器 1）由 Weights 决定，见 Weights Wiki 的「有效负重系数」。
 本附属不改系数、不加上限、不减速，只把 Weights 的数交给 Human。
 
-- [配置与使用](Usage.md)：参考负重配置、`/meridian status` 的负重行、`/meridian burden` 查询命令。
+- [配置与使用](Usage.md)：参考负重配置、`/meridian body status` 的负重行。
 - [接入说明](Integration.md)：依赖、读取时机、不可算时的回退和对其他附属的公开读数。
 - [验证记录](Verification.md)：JUnit 与 GameTest 覆盖。
 
