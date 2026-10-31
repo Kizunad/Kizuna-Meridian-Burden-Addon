@@ -4,6 +4,9 @@
 
 命令：`bash gradlew --offline test build :fabric:runGametest`（Java 17）。
 
+Gradle 8.14.6 wrapper、Loom 1.13.6，版本取自 Framework 的版本目录。Framework、Human、bs3d 与 Weights 在 `settings.gradle` 中按
+Framework 统一装配清单以源码组合，编译与开发运行使用其当前输出，不必先构建这几个仓库的 JAR；开发运行所需的 Human 客户端库按清单读已构建的 JAR。
+
 ### JUnit
 
 - `BurdenSettingsTest`：随 JAR 发布的默认参考负重为 70；整数和小数都接受；`0`、负数、`nan`、`inf`、字符串、空文件、多余键、语法错误都拒绝。

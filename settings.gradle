@@ -6,8 +6,33 @@ pluginManagement {
     }
 }
 
+// 相邻仓库位置、产物路径与第三方版本都由 Framework 的工作区脚本提供（kizunaWorkspace、libs）。
+apply from: new File(rootDir.parentFile, 'Kizuna-Meridian-Mod-Framework/scripts/workspace.gradle')
+
 rootProject.name = 'kizuna-meridian-burden-addon'
 include 'fabric'
 
-// 相邻仓库只通过已构建的安装 JAR 接入，不启用 composite build，
-// 构建本仓库不会改写 Human、Weights 或 Framework 的输出目录。
+// 相邻仓库按 Framework 统一装配清单以源码组合。local.meridian 是框架的本地替换键；
+// 本构建直接组合框架时以这里的规则为准，功法与 Human 的协议还需要 client。
+// 按坐标装入 Human 等模组时，Loom 以框架真实坐标 dev.kizuna.meridian 重新加入其传递库；
+// 只替换 local.meridian 时该坐标会按外部模块解析而失败，所以真实坐标也登记替换。
+kizunaWorkspace.includeSource('framework', [
+        client: ['local.meridian:client', 'dev.kizuna.meridian:client'],
+        server: ['local.meridian:server', 'dev.kizuna.meridian:server']
+])
+// Weights 客户端按真实坐标依赖 bs3d client，而经 Human 嵌套的 Items、Progression 只登记 bs3d server；
+// 同一仓库只按最先登记的规则替换，嵌套构建在 includeBuild 时即登记，所以 bs3d 要在 Human 之前组合并列出两个模块。
+kizunaWorkspace.includeSource('bs3d', [
+        client: 'dev.kizuna.backpack3d:client',
+        server: 'dev.kizuna.backpack3d:server'
+])
+// Human 与 Weights 是模组依赖，Loom 按真实坐标重新加入其传递库，所以替换键用各工程自身的 group 与工程名。
+kizunaWorkspace.includeSource('human', [
+        fabric: 'dev.kizuna.meridian.human:fabric',
+        server: 'dev.kizuna.meridian.human:server',
+        shared: 'dev.kizuna.meridian.human:shared'
+])
+kizunaWorkspace.includeSource('bs3d-weights', [
+        server: 'dev.kizuna.bs3d.weights:server',
+        client: 'dev.kizuna.bs3d.weights:client'
+])
