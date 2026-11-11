@@ -5,7 +5,10 @@
   "name": "负重 GameTest",
   "environment": "*",
   "entrypoints": {
-    "fabric-gametest": ["dev.kizuna.meridian.burden.test.BurdenGameTest"]
+    "fabric-gametest": [
+      "dev.kizuna.meridian.burden.test.BurdenGameTest",
+      "dev.kizuna.meridian.burden.test.BurdenUnavailableGameTest"
+    ]
   },
   "depends": {
     "meridian_burden": "*"

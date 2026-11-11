@@ -7,7 +7,9 @@ import static org.junit.Assert.assertEquals;
 
 /** 倍率 = 1 + 有效负重 kg / 参考负重 kg，实重只随读数原样带出。 */
 public final class BurdenReadingTest {
-    private static final BurdenSettings SEVENTY_KG = new BurdenSettings(70);
+    // 算不出时的重负荷倍率与这里的换算无关，取默认表的值。
+    private static final double UNAVAILABLE_MULTIPLIER = 4.2;
+    private static final BurdenSettings SEVENTY_KG = new BurdenSettings(70, UNAVAILABLE_MULTIPLIER);
     private static final double PRECISION = 1e-12;
 
     @Test
