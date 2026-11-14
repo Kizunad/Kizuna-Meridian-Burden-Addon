@@ -2,6 +2,7 @@ package dev.kizuna.meridian.burden.test;
 
 import dev.kizuna.meridian.burden.fabric.BurdenLoad;
 import dev.kizuna.meridian.burden.fabric.BurdenReading;
+import dev.kizuna.bs3d.weights.server.WeightRules;
 import dev.kizuna.meridian.human.fabric.HumanHealthHost;
 import dev.kizuna.meridian.protocol.HealthHostProtobuf;
 import dev.kizuna.meridian.protocol.pb.HealthHostMessages.HealthHostRequest;
@@ -12,6 +13,7 @@ import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionSet;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +58,36 @@ public final class BurdenGameTest {
     private static final PermissionSet OTHER_BODY_PERMISSIONS = LevelBasedPermissionSet.GAMEMASTER;
     private static final String FULL_STACK_IN_MAIN_STATUS = "负重 128.0 kg，行走负荷 ×2.83";
     private static final String UNLOADED_STATUS = "负重 0.0 kg，行走负荷 ×1.00";
+
+    @GameTest(maxTicks = DEFAULT_TIMEOUT)
+    public void vanillaArmorAndAdditionalEquipmentReachHumanLoad(GameTestHelper context) {
+        // 原版甲尚无认可克数，沿用 Weights 的既有默认自重；测试只验证装备来源已接入有效负重。
+        var fixture = new BurdenTestPlayer(context);
+        var player = fixture.player;
+        player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+        player.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.IRON_CHESTPLATE));
+        player.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.IRON_LEGGINGS));
+        player.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
+        player.setItemSlot(EquipmentSlot.BODY, new ItemStack(Items.IRON_HORSE_ARMOR));
+        player.setItemSlot(EquipmentSlot.SADDLE, new ItemStack(Items.SADDLE));
+        long expected = 6 * WeightRules.DEFAULT_UNIT_GRAMS;
+        double load = UNLOADED + (double) expected / SEVENTY_KILOGRAMS;
+        context.runAtTickTime(READING_REFRESH_TICKS, () -> {
+            verifyReading(context, fixture, expected, load);
+            verifyTotal(context, fixture, expected);
+            for (var slot : List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
+                    EquipmentSlot.FEET, EquipmentSlot.BODY, EquipmentSlot.SADDLE)) {
+                player.setItemSlot(slot, ItemStack.EMPTY);
+            }
+        });
+        context.runAtTickTime(READING_REFRESH_TICKS * 2, () -> {
+            try (fixture) {
+                verifyReading(context, fixture, 0, UNLOADED);
+                verifyTotal(context, fixture, 0);
+            }
+            context.succeed();
+        });
+    }
 
     @GameTest(maxTicks = WALK_TEST_TICK_LIMIT)
     public void seventyKilogramsDoubleLegFatigueOfTenSecondsWalking(GameTestHelper context) {

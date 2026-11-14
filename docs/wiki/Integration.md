@@ -35,3 +35,15 @@ Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来
 
 库存不可算时为空。只能在逻辑服务器主线程调用；模组尚未初始化时抛出 `IllegalStateException`。
 随身实重只经这个入口提供，游戏内不显示。
+
+
+## 装备负重口径（2026-11-03）
+
+Weights 现在将 BS3D 非容器穿搭、原版人体四甲槽以及 26.2 的身体甲／鞍槽全部计入
+`armor` 来源（默认系数仍为 1）；容器继续使用 `worn_containers`。本附属继续只读
+`Burden` API，不复制遍历代码，也不改 70 kg 参考负重或倍率公式。
+WarSuit、WarLegs 都是单个实际 ItemStack，其甲层和模型段不增加计重次数。
+重量来源和待定克数由 Weights Wiki 的「穿搭与容器重量来源」维护。
+
+运行 GameTest 时用新的 `-PburdenTestRun=<名称>` 和
+`-PburdenTestEula=<已有接受文件>`，保留历史世界；已有世界的运行目录会被拒绝。

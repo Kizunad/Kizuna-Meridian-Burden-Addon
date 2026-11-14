@@ -55,3 +55,19 @@ GameTest 改用 Fabric `@GameTest`：行走用例沿用 300 tick，其余两例�
 命令：`./gradlew test build :fabric:compileGametestJava`；`python3 scripts/check_docs.py`；`git diff --check`。
 
 结果：JUnit 6/6；文档检查通过（5 个页面）。GameTest 尚未运行：完整装配里还有附属没迁完，迁完后用正式完整装配统一跑。
+
+
+## 2026-11-03：全部装备计入有效负重
+
+使用 BS3D G2 工作区和 Weights 当前源码，`test build :fabric:runGametest` 完整成功（41 秒）。
+JUnit 6/6；GameTest 5/5（本仓 4 项与原版 always_pass）。新用例穿戴人体四甲、身体甲和鞍，
+按现有 100 g 回退读得 600 g 实重与有效负重，Human 倍率为 `1 + 600/70000`；卸下并等待缓存刷新后归零。
+这里的 100 g 是既有默认值，不是为原版甲确定的新重量。
+70 kg 行走回归的左股直肌疲劳为 6.633333333333336／3.3166666666666687，比值约 2。
+
+命令使用 `--no-daemon -PkizunaCodeDir=/home/kiz/Code`，
+`-Pkizuna.dir.bs3d=/home/kiz/Code-gear/backpack-and-storage-3D`、
+`-PburdenTestRun=g2-armor-b` 与指向已有接受文件的 `-PburdenTestEula`。
+日志 `/home/kiz/Code-gear/gear-g2-burden-b.log`；
+报告 `fabric/build/gametest/g2-armor-b/build/gametest-results.xml`。
+每次新目录运行，旧产物与世界保留。文档引用检查通过；不包含新增客户端渲染或 Windows 验收。
