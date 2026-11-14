@@ -2,6 +2,8 @@ package dev.kizuna.meridian.burden.test;
 
 import dev.kizuna.meridian.burden.fabric.BurdenLoad;
 import dev.kizuna.meridian.burden.fabric.BurdenReading;
+import dev.kizuna.meridian.burden.fabric.BurdenReadout;
+import dev.kizuna.meridian.burden.fabric.BurdenView;
 import dev.kizuna.bs3d.weights.server.WeightRules;
 import dev.kizuna.meridian.human.fabric.HumanHealthHost;
 import dev.kizuna.meridian.protocol.HealthHostProtobuf;
@@ -42,6 +44,8 @@ public final class BurdenGameTest {
     private static final double MULTIPLIER_TOLERANCE = 1e-9;
     // Weights 每 5 个服务端 tick 最多重算一次，放入石头后多等一 tick 再读。
     private static final long READING_REFRESH_TICKS = 6;
+    // 同步每 10 tick 看一次，Weights 每 5 tick 最多重算一次：放进物品后等 20 tick，新读数一定已经发出。
+    private static final long SYNC_SETTLE_TICKS = 20;
     private static final long WALK_START_TICK = READING_REFRESH_TICKS;
     private static final long WALK_TICKS = 200;
     private static final long WALK_END_TICK = WALK_START_TICK + WALK_TICKS;
@@ -84,6 +88,33 @@ public final class BurdenGameTest {
             try (fixture) {
                 verifyReading(context, fixture, 0, UNLOADED);
                 verifyTotal(context, fixture, 0);
+            }
+            context.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = DEFAULT_TIMEOUT)
+    public void readingIsSyncedOnJoinAndOnlyWhenItChanges(GameTestHelper context) {
+        // 进服收到一份空身读数；放进石头后收到新的一份；之后重量不变，不再发。
+        var fixture = new BurdenTestPlayer(context);
+        context.runAtTickTime(1, () -> {
+            List<BurdenView> views = fixture.burdenViews();
+            context.assertTrue(views.size() == 1 && views.get(0).available() && views.get(0).effectiveGrams() == 0
+                    && views.get(0).multiplier() == UNLOADED, "进服没有收到一份空身读数：" + views);
+            fixture.player.getInventory().setItem(FIRST_MAIN_SLOT, new ItemStack(Items.STONE, SEVENTY_KILOGRAM_STONES));
+        });
+        context.runAtTickTime(1 + SYNC_SETTLE_TICKS, () -> {
+            List<BurdenView> views = fixture.burdenViews();
+            context.assertTrue(views.size() == 2, "放进石头后没有恰好多发一份读数：" + views);
+            BurdenView loaded = views.get(1);
+            context.assertTrue(loaded.effectiveGrams() == SEVENTY_KILOGRAMS
+                    && Math.abs(loaded.multiplier() - DOUBLE_LOAD) < MULTIPLIER_TOLERANCE, "发出的读数不对：" + loaded);
+            context.assertTrue(BurdenReadout.line(loaded).equals("负重：70.0 / 224 kg · 重（实重 35.0 kg）"),
+                    "70 kg 的摘要行不对：" + BurdenReadout.line(loaded));
+        });
+        context.runAtTickTime(1 + SYNC_SETTLE_TICKS * 3, () -> {
+            try (fixture) {
+                context.assertTrue(fixture.burdenViews().size() == 2, "重量没变又发了读数：" + fixture.burdenViews());
             }
             context.succeed();
         });

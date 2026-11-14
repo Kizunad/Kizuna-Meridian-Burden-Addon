@@ -12,11 +12,13 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-/** 参考负重只接受正的有限数、必须写；算不出时的重负荷倍率不小于 1，旧文件缺它时取默认表的 4.2。 */
+/** 参考负重只接受正的有限数、必须写；算不出时的重负荷倍率不小于 1、超载线大于 1，旧文件缺这两个键时取默认表的 4.2。 */
 public final class BurdenSettingsTest {
     private static final double SHIPPED_REFERENCE_KG = 70;
     // 疾跑封顶那档，占位待试玩。
     private static final double SHIPPED_UNAVAILABLE_MULTIPLIER = 4.2;
+    // 超载线默认也取疾跑封顶那档。
+    private static final double SHIPPED_OVERLOAD_MULTIPLIER = 4.2;
     private static final double CUSTOM_REFERENCE_KG = 50;
     // 加 unavailable_multiplier 之前随 JAR 发布、已导出到服主配置目录的文件。
     private static final String OLD_EXPORT = """
@@ -29,11 +31,12 @@ public final class BurdenSettingsTest {
 
     @Test
     public void shippedSettingsUseSeventyKilogramsAndTheSprintCapWhenUnavailable() throws IOException {
-        // 读取随 JAR 发布的默认表，确认表中数值就是约定的参考负重和重负荷倍率，而且两个键都写全了。
+        // 读取随 JAR 发布的默认表，确认表中数值就是约定的参考负重、重负荷倍率和超载线，而且三个键都写全了。
         try (var source = BurdenSettings.class.getResourceAsStream(BurdenSettings.DEFAULT_RESOURCE)) {
             var parsed = BurdenSettings.parse(new String(source.readAllBytes(), StandardCharsets.UTF_8));
             assertEquals(SHIPPED_REFERENCE_KG, parsed.settings().referenceKilograms(), 0);
             assertEquals(SHIPPED_UNAVAILABLE_MULTIPLIER, parsed.settings().unavailableMultiplier(), 0);
+            assertEquals(SHIPPED_OVERLOAD_MULTIPLIER, parsed.settings().overloadMultiplier(), 0);
             assertEquals(List.of(), parsed.defaultedKeys());
         }
     }
@@ -47,6 +50,11 @@ public final class BurdenSettingsTest {
         // 写 1 是服主明确选择算不出时不计负重，允许。
         var unloaded = BurdenSettings.parse("reference_kg = 70\nunavailable_multiplier = 1");
         assertEquals(BurdenReading.UNLOADED, unloaded.settings().unavailableMultiplier(), 0);
+        // 超载线和算不出时的倍率各管各的：改一个不动另一个。
+        var overload = BurdenSettings.parse("reference_kg = 70\noverload_multiplier = 3");
+        assertEquals(3, overload.settings().overloadMultiplier(), 0);
+        assertEquals(SHIPPED_UNAVAILABLE_MULTIPLIER, overload.settings().unavailableMultiplier(), 0);
+        assertEquals(SHIPPED_OVERLOAD_MULTIPLIER, unloaded.settings().overloadMultiplier(), 0);
     }
 
     @Test
@@ -55,16 +63,21 @@ public final class BurdenSettingsTest {
         var path = folder.getRoot().toPath().resolve(BurdenSettings.FILE_NAME);
         Files.writeString(path, OLD_EXPORT, StandardCharsets.UTF_8);
         var parsed = BurdenSettings.parse(OLD_EXPORT);
-        assertEquals(List.of("unavailable_multiplier"), parsed.defaultedKeys());
+        assertEquals(List.of("unavailable_multiplier", "overload_multiplier"), parsed.defaultedKeys());
         assertEquals(CUSTOM_REFERENCE_KG, parsed.settings().referenceKilograms(), 0);
         assertEquals(SHIPPED_UNAVAILABLE_MULTIPLIER, parsed.settings().unavailableMultiplier(), 0);
+        assertEquals(SHIPPED_OVERLOAD_MULTIPLIER, parsed.settings().overloadMultiplier(), 0);
+        // 上一版导出的文件有前两个键，只缺超载线。
+        var previous = BurdenSettings.parse("reference_kg = 50\nunavailable_multiplier = 3");
+        assertEquals(List.of("overload_multiplier"), previous.defaultedKeys());
+        assertEquals(SHIPPED_OVERLOAD_MULTIPLIER, previous.settings().overloadMultiplier(), 0);
         assertEquals(parsed.settings(), BurdenSettings.load(path));
         assertEquals(OLD_EXPORT, Files.readString(path, StandardCharsets.UTF_8));
     }
 
     @Test
     public void missingFileGetsTheShippedTable() throws IOException {
-        // 首次启动复制默认表，复制出的文件两个键都在，不再告警。
+        // 首次启动复制默认表，复制出的文件三个键都在，不再告警。
         var path = folder.getRoot().toPath().resolve("config").resolve(BurdenSettings.FILE_NAME);
         var settings = BurdenSettings.load(path);
         assertEquals(SHIPPED_UNAVAILABLE_MULTIPLIER, settings.unavailableMultiplier(), 0);
@@ -96,6 +109,22 @@ public final class BurdenSettingsTest {
         assertThrows(IllegalArgumentException.class, () -> unavailable("\"4.2\""));
         assertThrows(IllegalArgumentException.class,
                 () -> BurdenSettings.parse("reference_kg = 70\nunavailable_multipler = 4.2"));
+    }
+
+    @Test
+    public void invalidOverloadMultipliersAreRejected() {
+        // 超载线等于 1 时负重上限是 0 kg，和小于 1、nan、inf、字符串、拼错的键一样拒绝。
+        assertThrows(IllegalArgumentException.class, () -> overload("1"));
+        assertThrows(IllegalArgumentException.class, () -> overload("0.5"));
+        assertThrows(IllegalArgumentException.class, () -> overload("nan"));
+        assertThrows(IllegalArgumentException.class, () -> overload("inf"));
+        assertThrows(IllegalArgumentException.class, () -> overload("\"4.2\""));
+        assertThrows(IllegalArgumentException.class,
+                () -> BurdenSettings.parse("reference_kg = 70\noverload_multipler = 4.2"));
+    }
+
+    private static BurdenSettings.Parsed overload(String value) {
+        return BurdenSettings.parse("reference_kg = 70\noverload_multiplier = " + value);
     }
 
     private static BurdenSettings.Parsed unavailable(String value) {

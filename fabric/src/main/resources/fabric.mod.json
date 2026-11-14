@@ -8,7 +8,8 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "environment": "*",
   "entrypoints": {
-    "main": ["dev.kizuna.meridian.burden.fabric.BurdenFabric"]
+    "main": ["dev.kizuna.meridian.burden.fabric.BurdenFabric"],
+    "client": ["dev.kizuna.meridian.burden.fabric.client.BurdenClient"]
   },
   "depends": {
     "java": ">=25",

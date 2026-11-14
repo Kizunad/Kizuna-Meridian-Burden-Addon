@@ -71,3 +71,43 @@ JUnit 6/6；GameTest 5/5（本仓 4 项与原版 always_pass）。新用例穿�
 日志 `/home/kiz/Code-gear/gear-g2-burden-b.log`；
 报告 `fabric/build/gametest/g2-armor-b/build/gametest-results.xml`。
 每次新目录运行，旧产物与世界保留。文档引用检查通过；不包含新增客户端渲染或 Windows 验收。
+
+## 2026-11-14：检视里的负重读数
+
+读数同步给客户端（`BurdenSync`、`BurdenView`），文字和四档（`BurdenReadout`、`BurdenTier`），新设置 `overload_multiplier`。
+显示在 Human-UI 的检视摘要；说明见[配置与使用](Usage.md#检视里的负重读数)。
+
+命令：`./gradlew --no-daemon test build :fabric:runGametest -PburdenTestRun=<新名称> -PburdenTestEula=<已有接受文件>`；`python3 scripts/check_docs.py`；`git diff --check`。
+
+### JUnit
+
+- `BurdenSettingsTest`：默认表三个键写全，超载线默认 4.2；旧导出文件缺 `overload_multiplier` 时取默认值并列出缺的键；
+  超载线写 1、小于 1、`nan`、`inf`、字符串、拼错的键都拒绝；超载线和算不出时的倍率互不影响。
+- `BurdenReadoutTest`：
+  - 四档在 ×1.5、×2、超载线处换档，分界值归上面那档；换成千克是 35 kg、70 kg、224 kg，差一克还在下面那档；
+  - 摘要行和悬浮四行的全文（18 kg、0 kg、128 kg、224 kg 四种读数）；
+  - 算不出时写「按超载计」和「腿多累 320%」；`unavailable_multiplier = 1` 时写「按轻计」；
+  - 超载线设到 ×1.8、×1.2 时，够不着的档不列；
+  - `BurdenView` 写出再读回一个字段不差，算不出的那一种也一样。
+
+### GameTest
+
+- `readingIsSyncedOnJoinAndOnlyWhenItChanges`：进服收到一份空身读数；主库存放 35 块石头后 20 tick 内恰好多收一份
+  （70 kg、×2，摘要行「负重：70.0 / 224 kg · 重（实重 35.0 kg）」）；再过 40 tick 重量没变，没有第三份。
+- `unavailableReadingIsSyncedAsUnavailableAndReplacedOnRecovery`：33 个灵草囊时最新一份是「算不出」（不是 0 kg），
+  摘要行「负重：算不出 · 按超载计」；拿走一个后最新一份回到 70 kg、×2。
+
+### 真客户端
+
+Human-UI 的 `:client:runSmoke -PburdenSmoke=true`（无头真客户端加整合服）：清空随身物品后检视摘要显示
+「负重：0.0 / 224 kg · 轻（实重 0.0 kg）」；窗口不关，服务端往主库存放 35 块石头后变成「70.0 / 224 kg · 重」，
+放到 112 块后变成「224.0 / 224 kg · 超载」。每次都要求：新读数两秒内到客户端，到了以后那一行最迟两个客户端 tick 换好，
+不等下一份身体快照。输出 `BURDEN_UI_OK`，四张截图（含一张悬浮说明）。
+
+### 负对照
+
+每处改错后对应的测试变红，还原后重跑通过：
+
+- JUnit：轻档上界改成 ×1.6；悬浮的「多累几成」不减 1；超载线允许等于 1；读数包把实重写成负重；Human-UI 的负重行不取读数的文字。
+- GameTest：同步改成每次核对都发；同步的周期核对停掉。
+- 真客户端：Human-UI 不加负重行；UI 不逐 tick 核对摘要行；同步的周期核对停掉。

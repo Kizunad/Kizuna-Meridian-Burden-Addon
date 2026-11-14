@@ -9,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 public final class BurdenReadingTest {
     // 算不出时的重负荷倍率与这里的换算无关，取默认表的值。
     private static final double UNAVAILABLE_MULTIPLIER = 4.2;
-    private static final BurdenSettings SEVENTY_KG = new BurdenSettings(70, UNAVAILABLE_MULTIPLIER);
+    private static final BurdenSettings SEVENTY_KG = new BurdenSettings(70, UNAVAILABLE_MULTIPLIER, UNAVAILABLE_MULTIPLIER);
     private static final double PRECISION = 1e-12;
 
     @Test

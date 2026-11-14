@@ -1,9 +1,11 @@
 package dev.kizuna.meridian.burden.test;
 
 import com.mojang.authlib.GameProfile;
+import dev.kizuna.meridian.burden.fabric.BurdenView;
 import dev.kizuna.meridian.technique.fabric.testing.RecordingConnection;
 import dev.kizuna.meridian.technique.fabric.testing.TestPlayers;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,6 +34,15 @@ final class BurdenTestPlayer implements AutoCloseable {
         // 创造模式不受伤，受击会让 Human 过滤这一 tick 的位移。
         player.setGameMode(GameType.CREATIVE);
         player.setNoGravity(true /* noGravity */);
+    }
+
+    /** 真正发给这名玩家的负重读数包，按发出的先后排。 */
+    List<BurdenView> burdenViews() {
+        return connection.packets().stream()
+                .filter(packet -> packet instanceof ClientboundCustomPayloadPacket custom
+                        && custom.payload() instanceof BurdenView)
+                .map(packet -> (BurdenView) ((ClientboundCustomPayloadPacket) packet).payload())
+                .toList();
     }
 
     @Override

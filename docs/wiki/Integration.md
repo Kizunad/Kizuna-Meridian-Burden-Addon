@@ -23,6 +23,24 @@ Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来
 库存不可算时 Weights 记一次告警；本附属按无负荷结算，不让 Human 暂停身体。
 倍率由公式保证不小于 1；Human 对非有限或小于 1 的倍率按接线错误抛出并暂停该身体，本附属不会产生这种值。
 
+## 发给客户端的读数
+
+`BurdenSync` 把每名玩家的读数发给他自己的客户端，通道 `meridian_burden:reading`，内容是 `BurdenView`：
+
+| 字段 | 含义 |
+|---|---|
+| `available` | Weights 这次算不算得出 |
+| `totalGrams`、`effectiveGrams` | 随身实重与有效负重，克；算不出时为 0 |
+| `multiplier` | 行走负荷倍率；算不出时是 `unavailable_multiplier` |
+| `referenceKilograms`、`overloadMultiplier` | 设置里的参考负重与超载线，客户端据此写四档从多少千克算起 |
+
+- 进服发一次；之后每 10 个服务端 tick 读一次（读的是 Weights 的共用读数，不另外遍历库存），和上次发给这名玩家的不一样才发。
+  一份约 30 到 45 字节。断线时丢掉这名玩家的记录。
+- 客户端入口 `BurdenClient` 只留最新的一份，退出世界清掉；界面经 `BurdenClient.reading()` 读，没收到时为空。
+- 文字在 `BurdenReadout`：`line` 是摘要里一行，`hover` 是悬浮说明的几行。倍率由服务端算好带在包里，客户端只按它和超载线查档位、换算千克。
+- 显示在 Human-UI：检视摘要的负重行。Human-UI 硬依赖本附属（`meridian_burden`）；本附属不依赖任何界面模组，
+  专用服务器上照常加载。
+
 ## 对其他附属的读数
 
 `BurdenLoad.read(ServerPlayer)` 返回 `Optional<BurdenReading>`：
@@ -34,7 +52,7 @@ Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来
 | `multiplier` | 当前行走负荷倍率 |
 
 库存不可算时为空。只能在逻辑服务器主线程调用；模组尚未初始化时抛出 `IllegalStateException`。
-随身实重只经这个入口提供，游戏内不显示。
+服务端附属要随身实重走这个入口；玩家在检视的负重行里看得到实重。
 
 
 ## 装备负重口径（2026-11-03）

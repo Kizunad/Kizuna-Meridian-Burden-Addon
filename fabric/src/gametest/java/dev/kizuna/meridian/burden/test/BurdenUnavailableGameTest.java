@@ -2,6 +2,8 @@ package dev.kizuna.meridian.burden.test;
 
 import dev.kizuna.meridian.burden.fabric.BurdenLoad;
 import dev.kizuna.meridian.burden.fabric.BurdenReading;
+import dev.kizuna.meridian.burden.fabric.BurdenReadout;
+import dev.kizuna.meridian.burden.fabric.BurdenView;
 import dev.kizuna.meridian.human.fabric.HumanHealthHost;
 import dev.kizuna.meridian.protocol.HealthHostProtobuf;
 import dev.kizuna.meridian.protocol.pb.HealthHostMessages.HealthHostRequest;
@@ -54,6 +56,8 @@ public final class BurdenUnavailableGameTest {
     // Weights 每 5 个服务端 tick 最多重算一次，改动库存后多等一 tick 再读。
     private static final long READING_REFRESH_TICKS = 6;
     private static final long CHANGED_READING_TICK = READING_REFRESH_TICKS * 2;
+    // 同步每 10 tick 核对一次，Weights 每 5 tick 最多重算一次：改动库存后 20 tick 内新读数一定已经发出。
+    private static final long SYNC_SETTLE_TICKS = 20;
     private static final long WALK_START_TICK = READING_REFRESH_TICKS;
     private static final long WALK_TICKS = 200;
     private static final long WALK_END_TICK = WALK_START_TICK + WALK_TICKS;
@@ -130,6 +134,31 @@ public final class BurdenUnavailableGameTest {
             try (fixture) {
                 verifyUnavailable(context, fixture);
                 verifyStatus(context, fixture, UNAVAILABLE_STATUS);
+            }
+            context.succeed();
+        });
+    }
+
+    @GameTest(maxTicks = DEFAULT_TIMEOUT)
+    public void unavailableReadingIsSyncedAsUnavailableAndReplacedOnRecovery(GameTestHelper context) {
+        // 33 个灵草囊加 70 kg 石头：发给客户端的是「算不出」，不是 0 kg；拿走一个后再发一份 70 kg 的正常读数。
+        var fixture = new BurdenTestPlayer(context);
+        carryTooManyContainers(context, fixture);
+        carryStones(fixture, SEVENTY_KILOGRAM_STONES);
+        context.runAtTickTime(SYNC_SETTLE_TICKS, () -> {
+            BurdenView latest = fixture.burdenViews().getLast();
+            context.assertTrue(!latest.available() && latest.effectiveGrams() == 0
+                    && latest.multiplier() == UNAVAILABLE_MULTIPLIER, "算不出时发出的读数不对：" + latest);
+            context.assertTrue(BurdenReadout.line(latest).equals("负重：算不出 · 按超载计"),
+                    "算不出时的摘要行不对：" + BurdenReadout.line(latest));
+            fixture.player.getInventory().setItem(LAST_LOOSE_POUCH_SLOT, ItemStack.EMPTY);
+        });
+        context.runAtTickTime(SYNC_SETTLE_TICKS * 2, () -> {
+            try (fixture) {
+                BurdenView latest = fixture.burdenViews().getLast();
+                context.assertTrue(latest.available() && latest.effectiveGrams() == SEVENTY_KILOGRAMS
+                        && Math.abs(latest.multiplier() - DOUBLE_LOAD) < MULTIPLIER_TOLERANCE,
+                        "恢复可算后发出的读数不对：" + latest);
             }
             context.succeed();
         });
