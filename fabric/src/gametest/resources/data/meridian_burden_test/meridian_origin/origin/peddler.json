@@ -1,0 +1,13 @@
+{
+  "weight": 1,
+  "icon": "minecraft:bundle",
+  "talents": [
+    {
+      "type": "meridian_burden:carry_capacity",
+      "params": {
+        "reference_scale": 1.25
+      }
+    }
+  ],
+  "threats": []
+}

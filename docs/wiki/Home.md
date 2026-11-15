@@ -19,5 +19,5 @@
 
 ## 依赖
 
-Weights 与 Human 都是硬依赖，缺任何一个都不能加载；不提供缺依赖时的替代路径。
+Weights、Human 与出身附属（`meridian_origin`，登记负重天赋）都是硬依赖，缺任何一个都不能加载；不提供缺依赖时的替代路径。
 Weights 的服务端 JAR 为纯服务端产物，单机内置服务器使用 Weights 客户端 JAR 中同一份服务端代码。

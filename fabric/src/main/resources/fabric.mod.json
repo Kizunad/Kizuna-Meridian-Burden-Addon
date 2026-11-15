@@ -9,7 +9,8 @@
   "environment": "*",
   "entrypoints": {
     "main": ["dev.kizuna.meridian.burden.fabric.BurdenFabric"],
-    "client": ["dev.kizuna.meridian.burden.fabric.client.BurdenClient"]
+    "client": ["dev.kizuna.meridian.burden.fabric.client.BurdenClient"],
+    "meridian_origin": ["dev.kizuna.meridian.burden.fabric.BurdenOrigins"]
   },
   "depends": {
     "java": ">=25",
@@ -17,6 +18,7 @@
     "fabricloader": ">=0.20.1",
     "fabric-api": "*",
     "bs3d_weights_addon": "*",
-    "meridian_human_host": "*"
+    "meridian_human_host": "*",
+    "meridian_origin": "*"
   }
 }

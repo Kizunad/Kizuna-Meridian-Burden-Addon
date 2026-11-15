@@ -15,6 +15,8 @@ dependencies {
     // 相邻仓库在 settings 中以源码组合，与原先读单个 JAR 一致只取各模块本身。
     // 行走负荷接入点来自必装 Human；开发运行由完整装配按同一组件装入。
     compileOnly('dev.kizuna.meridian.human:fabric') { transitive = false }
+    // 出身附属是硬依赖：登记「负重参考重量」天赋类型；运行时由完整装配装入。
+    compileOnly('dev.kizuna.meridian.origin:fabric') { transitive = false }
     // 有效负重 API 来自必装 Weights 的服务端模块。
     implementation('dev.kizuna.bs3d.weights:server') { transitive = false }
     // 参考负重写在 TOML，安装 JAR 自带解析库；版本目录条目是 Provider，嵌套声明单独写。

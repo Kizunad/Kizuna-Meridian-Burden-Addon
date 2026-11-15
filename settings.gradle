@@ -32,6 +32,12 @@ kizunaWorkspace.includeSource('human', [
         server: 'dev.kizuna.meridian.human:server',
         shared: 'dev.kizuna.meridian.human:shared'
 ])
+// 出身附属：登记「负重参考重量」这一类天赋，按真实坐标声明依赖。
+kizunaWorkspace.includeSource('origin', [
+        fabric: 'dev.kizuna.meridian.origin:fabric',
+        server: 'dev.kizuna.meridian.origin:server',
+        shared: 'dev.kizuna.meridian.origin:shared'
+])
 kizunaWorkspace.includeSource('bs3d-weights', [
         server: 'dev.kizuna.bs3d.weights:server',
         client: 'dev.kizuna.bs3d.weights:client'

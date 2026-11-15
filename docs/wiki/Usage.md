@@ -26,6 +26,20 @@ overload_multiplier = 4.2
 
 有效负重的来源系数在 Weights 的 `config/bs3d_weights/burden.toml`，同样启动时读取。
 
+## 出身带的负重天赋
+
+本附属给出身附属登记了常驻天赋 `meridian_burden:carry_capacity`，参数 `reference_scale` 是参考负重的倍数
+（`fabric/.../BurdenOrigins.java`）。出身 JSON 里这样写：
+
+```json
+{"type": "meridian_burden:carry_capacity", "params": {"reference_scale": 1.25}}
+```
+
+- 这名玩家的参考负重 = `reference_kg` × `reference_scale`：默认 70 kg、倍数 1.25 时是 87.5 kg，背 70 kg 有效负重的行走负荷从 ×2.00 降到 ×1.80。
+- 一个出身写了几条就连乘；没选出身或出身不带这条天赋时就是 `reference_kg`。
+- 检视读数的参考负重和负重上限跟着变（上限 = (`overload_multiplier` − 1) × 这名玩家的参考负重）；`unavailable_multiplier` 不变。
+- 倍数必须是正的有限数，写成 0、负数或漏写，出身数据读取失败：开服时直接起不来，运行中 `/reload` 时沿用重载前的出身（出身附属的规矩）。
+
 ## 算不出负重时
 
 下面这些情况 Weights 不给读数（`Burden.effectiveGrams` 为空）：

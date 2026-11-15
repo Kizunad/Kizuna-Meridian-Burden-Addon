@@ -50,8 +50,9 @@ final class BurdenSync {
     }
 
     private BurdenView view(ServerPlayer player) {
-        // 和 Human 结算走跑时读的是同一个读数。
-        return BurdenLoad.read(player).map(reading -> BurdenView.of(reading, settings))
-                .orElseGet(() -> BurdenView.unavailable(settings));
+        // 和 Human 结算走跑时读的是同一个读数；参考负重和负重上限按这名玩家的出身算。
+        BurdenSettings own = BurdenOrigins.settingsFor(player, settings);
+        return BurdenLoad.read(player).map(reading -> BurdenView.of(reading, own))
+                .orElseGet(() -> BurdenView.unavailable(own));
     }
 }

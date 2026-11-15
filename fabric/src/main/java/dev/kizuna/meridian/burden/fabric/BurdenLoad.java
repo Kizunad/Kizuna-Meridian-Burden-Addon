@@ -66,7 +66,8 @@ public final class BurdenLoad implements HumanMovementLoad {
         if (effective.isEmpty() || total.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(BurdenReading.of(total.getAsLong(), effective.getAsLong(), settings));
+        BurdenSettings own = BurdenOrigins.settingsFor(player, settings);
+        return Optional.of(BurdenReading.of(total.getAsLong(), effective.getAsLong(), own));
     }
 
     private static String describe(BurdenReading reading) {

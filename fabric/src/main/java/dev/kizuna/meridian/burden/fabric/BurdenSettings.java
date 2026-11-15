@@ -47,6 +47,11 @@ record BurdenSettings(double referenceKilograms, double unavailableMultiplier, d
         }
     }
 
+    BurdenSettings withReferenceScale(double scale) {
+        // 出身让这名玩家的参考负重按倍数变；算不出和超载两档倍率不变，超载线换成千克也跟着变。
+        return new BurdenSettings(referenceKilograms * scale, unavailableMultiplier, overloadMultiplier);
+    }
+
     /**
      * 一份设置文件的解析结果。
      *

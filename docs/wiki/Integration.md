@@ -32,7 +32,7 @@ Weights 每 5 个服务端 tick 最多重算一次，同一 tick 的两个数来
 | `available` | Weights 这次算不算得出 |
 | `totalGrams`、`effectiveGrams` | 随身实重与有效负重，克；算不出时为 0 |
 | `multiplier` | 行走负荷倍率；算不出时是 `unavailable_multiplier` |
-| `referenceKilograms`、`overloadMultiplier` | 设置里的参考负重与超载线，客户端据此写四档从多少千克算起 |
+| `referenceKilograms`、`overloadMultiplier` | 这名玩家的参考负重（设置值乘出身的负重天赋倍数）与超载线，客户端据此写四档从多少千克算起 |
 
 - 进服发一次；之后每 10 个服务端 tick 读一次（读的是 Weights 的共用读数，不另外遍历库存），和上次发给这名玩家的不一样才发。
   一份约 30 到 45 字节。断线时丢掉这名玩家的记录。
