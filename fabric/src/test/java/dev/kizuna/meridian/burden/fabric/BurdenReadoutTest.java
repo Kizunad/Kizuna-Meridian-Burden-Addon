@@ -10,6 +10,7 @@ import static org.junit.Assert.assertEquals;
 
 /** 负重读数的四档分界、摘要和悬浮的文字，以及发给客户端的包来回一遍不走样。 */
 public final class BurdenReadoutTest {
+    private static final double LIMIT_DELTA = 1e-6;
     private static final double UNAVAILABLE = 4.2;
     private static final double OVERLOAD = 4.2;
     private static final BurdenSettings SEVENTY_KG = new BurdenSettings(70, UNAVAILABLE, OVERLOAD);
@@ -51,6 +52,8 @@ public final class BurdenReadoutTest {
                 "现在走、跑时腿多累 26%",
                 "不到 35 kg 轻，不到 70 kg 中，不到 224 kg 重，再多超载", NOTE), BurdenReadout.hover(light));
 
+        // 别的界面单独取上限时和这一行里写的是同一个数。
+        assertEquals(224, BurdenReadout.limitKilograms(light), LIMIT_DELTA);
         assertEquals("负重：0.0 / 224 kg · 轻（实重 0.0 kg）", BurdenReadout.line(view(0, 0, SEVENTY_KG)));
         assertEquals("现在走、跑时腿多累 0%", BurdenReadout.hover(view(0, 0, SEVENTY_KG)).get(1));
         BurdenView heavy = view(64_000, 128_000, SEVENTY_KG);

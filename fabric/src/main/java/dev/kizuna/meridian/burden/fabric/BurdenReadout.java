@@ -22,7 +22,7 @@ public final class BurdenReadout {
             return "负重：算不出 · 按" + tier + "计";
         }
         return String.format(Locale.ROOT, "负重：%.1f / %.0f kg · %s（实重 %.1f kg）",
-                kilograms(view.effectiveGrams()), limit(view), tier, kilograms(view.totalGrams()));
+                kilograms(view.effectiveGrams()), limitKilograms(view), tier, kilograms(view.totalGrams()));
     }
 
     /** 悬浮说明：实重和负重各是什么、腿多累几成、四档从多少千克算起。 */
@@ -31,7 +31,7 @@ public final class BurdenReadout {
         double extra = (view.multiplier() - BurdenReading.UNLOADED) * PERCENT;
         if (view.available()) {
             lines.add(String.format(Locale.ROOT, "随身东西实重 %.1f kg，按放在哪里折算成负重 %.1f kg，上限 %.0f kg",
-                    kilograms(view.totalGrams()), kilograms(view.effectiveGrams()), limit(view)));
+                    kilograms(view.totalGrams()), kilograms(view.effectiveGrams()), limitKilograms(view)));
             lines.add(String.format(Locale.ROOT, "现在走、跑时腿多累 %.0f%%", extra));
         } else {
             lines.add("随身容器或物品太多、套得太深，或者物品数据异常，重量算不出");
@@ -60,8 +60,8 @@ public final class BurdenReadout {
         return String.join("，", parts);
     }
 
-    private static double limit(BurdenView view) {
-        // 负重上限就是超载线对应的千克数。
+    /** 负重上限的千克数，也就是超载线；别的界面要显示上限时取这里，不另算。 */
+    public static double limitKilograms(BurdenView view) {
         return BurdenTier.kilogramsAt(view.overloadMultiplier(), view.referenceKilograms());
     }
 
