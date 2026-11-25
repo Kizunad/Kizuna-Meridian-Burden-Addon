@@ -31,7 +31,11 @@ test { useJUnit() }
 
 processResources {
     inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') { expand version: project.version }
+    def preserveJsonEscapes = true
+    inputs.property 'preserveJsonEscapes', preserveJsonEscapes
+    filesMatching('fabric.mod.json') {
+        expand([version: project.version]) { escapeBackslash = preserveJsonEscapes }
+    }
 }
 
 // 开发运行沿用 Meridian 统一完整装配；Human 的嵌套 Framework、协议库与客户端产物在开发时显式补齐。

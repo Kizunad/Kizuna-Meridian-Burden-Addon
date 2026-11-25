@@ -3,7 +3,13 @@
   "id": "meridian_burden",
   "version": "${version}",
   "name": "Kizuna's Meridian Burden",
-  "description": "按 BS3D Weights 有效负重放大 Human 行走与疾跑做功",
+  "contact": {
+    "homepage": "https://github.com/Kizunad/Kizuna-Meridian-Burden-Addon",
+    "sources": "https://github.com/Kizunad/Kizuna-Meridian-Burden-Addon",
+    "issues": "https://github.com/Kizunad/Kizuna-Meridian-Burden-Addon/issues"
+  },
+  "icon": "assets/meridian_burden/icon.png",
+  "description": "Makes walking and sprinting more demanding as the weight you carry increases.\n随身负重越高，行走和疾跑时身体做功越多。",
   "authors": ["Kizunad"],
   "license": "PolyForm-Noncommercial-1.0.0",
   "environment": "*",
