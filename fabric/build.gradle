@@ -27,7 +27,11 @@ dependencies {
     testImplementation libs.junit4
 }
 
-test { useJUnit() }
+test {
+    useJUnit()
+    workingDir layout.buildDirectory.dir('test-runtime')
+    doFirst { workingDir.mkdirs() }
+}
 
 processResources {
     inputs.property 'version', project.version
